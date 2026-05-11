@@ -1,0 +1,12 @@
+# Sovereign System Exclusions
+node_modules/
+*.log
+.env
+.env.local
+dist/
+build/
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+.sovereign-cache/
