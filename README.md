@@ -1,37 +1,30 @@
-# ΩΩ RECON ΩΩ — OSINT & reconnaissance engine
+# sovereign-recon
 
-**Eagle Shield Sovereign System** | Deployed: 2026-05-11 15:58
-**Repository:** sovereign-recon  
-**Classification:** ΩSOVEREIGN MAPPINGΩ — Tier ΩΩΩ (Confirmed/Tested/Primed)
+**Node:** AEG-NODE-865854 | **Role:** RECON | **Priority:** P1 | **Swarm:** AE Hub 8-Node Orchestrator
 
----
+Reconnaissance module of the Sovereign stack. First node in the AE Hub
+orchestrator swarm — maps the terrain before any other node acts.
 
-## Ω Purpose
+## Position in the Swarm
 
-This module is part of the **Eagle Shield Sovereign Architecture**, providing:
-- OSINT & reconnaissance engine
-- Full integration with ESC/EOC token ecosystem
-- Agentic AI augmentation via AEGENTIS/AEGENTIX
-- Government-grade security hardening
+| Order | Node | Role |
+|-------|------|------|
+| P1 | AEG-NODE-865854 | RECON (this repo) |
+| P2 | AEG-NODE-534000 | INFIL |
+| P3 | AEG-NODE-570081 | EXFIL |
+| P4 | AEG-NODE-328975 | DEFEND |
+| P5 | AEG-NODE-644943 | OFFEND |
+| P6 | AEG-NODE-011260 | INTEL |
+| P7 | AEG-NODE-681081 | MEDIC |
+| P8 | AEG-NODE-338476 | GHOST |
 
-## Ω Status
+## Layout
 
-| Metric | Value |
-|--------|-------|
-| Build State | ΩΩΩ POST (Confirmed) |
-| Last Verified | 2026-05-11 15:58 |
-| Chain Link | XRPL ↔ Solana ↔ EVM |
-| Security Level | Golden Dome |
+- `armada/` — OSINT Armada tool integrations and container configs
+- `configs/` — node configuration
+- `docs/` — operating procedures
 
-## Ω Deployment
+## Related
 
-`powershell
-# Clone and deploy
-git clone https://github.com/shalominattii-us/sovereign-recon.git
-cd sovereign-recon
-# Follow sovereign-installer for full stack
-`
-
----
-
-*ΩSOVEREIGN MAPPINGΩ — All builds timestamped, tiered, authenticated, and vaulted.*
+- `sovereign-osint` — populated OSINT tooling (BUNDLEMIT sibling)
+- `sovereign-agent` — agentic AI layer that tasks this node
