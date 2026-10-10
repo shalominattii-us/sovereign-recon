@@ -1,0 +1,16 @@
+# Infra Agent Configuration
+port: 9090
+metrics_path: "/metrics"
+targets:
+  - "localhost:9003"   # Heretic LLM
+  - "localhost:9004"   # Compliance Engine
+  - "localhost:9006"   # CyberCore Bridge
+  - "localhost:7777"   # AE-Hub Kernel
+  - "localhost:9777"   # AE-Hub v2 Kernel
+  - "localhost:9001"   # Nanotransaction
+  - "localhost:9002"   # Event Bus
+  - "localhost:3000"   # Web UI
+  - "localhost:3001"   # Grafana
+  - "localhost:3002"   # HUD
+scrape_interval: 30
+log_level: "info"
