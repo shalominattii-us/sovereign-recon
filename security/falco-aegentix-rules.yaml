@@ -1,0 +1,324 @@
+# Falco Rules for AEGENTIX Sovereign Stack
+# Ground-truth rules for Guardian approval
+# Version: 1.0 | Standard: ΩSOVEREIGN MAPPINGΩ
+
+# ─────────────────────────────────────────────────────────────────
+# MACRO DEFINITIONS
+# ─────────────────────────────────────────────────────────────────
+
+# Sovereign service names
+- macro: sovereign_services
+  condition: (container.image.repository contains "aegentix" or container.image.repository contains "sovereign" or container.image.repository contains "heretic" or container.image.repository contains "cybercore")
+
+# Critical ports
+- macro: sovereign_ports
+  condition: (fd.port in (9003, 9004, 9006, 7777, 3000, 3001, 3002, 8080, 8081, 8082, 8083, 8084))
+
+# Trusted binaries
+- macro: sovereign_binaries
+  condition: (proc.name in ("python3", "python", "node", "npm", "docker", "kubectl", "helm", "git", "curl", "wget", "jq", "psql", "redis-cli"))
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: UNAUTHORIZED CONTAINER ESCALATION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Container Privilege Escalation
+  desc: Detect unauthorized privileged container execution
+  condition: >
+    container and
+    (proc.cmdline contains "privileged" or
+     proc.cmdline contains "cap_add" or
+     proc.cmdline contains "SYS_ADMIN" or
+     proc.cmdline contains "hostPID" or
+     proc.cmdline contains "hostNetwork" or
+     proc.cmdline contains "hostIPC")
+  output: >
+    UNAUTHORIZED PRIVILEGE ESCALATION in sovereign container (user=%user.name container=%container.id image=%container.image.repository cmd=%proc.cmdline)
+  priority: CRITICAL
+  tags: [sovereign, security, escalation]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: UNAUTHORIZED NETWORK ACCESS
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Unauthorized Network Connection
+  desc: Detect unauthorized outbound connections from sovereign services
+  condition: >
+    sovereign_services and
+    evt.type = "connect" and
+    fd.sport > 1024 and
+    (fd.dip not in (127.0.0.1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) or
+     fd.rport not in (53, 80, 443, 5005, 5006, 9003, 9004, 9006, 7777, 3000, 3001, 3002, 8080, 8081, 8082, 8083, 8084, 5432, 6379))
+  output: >
+    UNAUTHORIZED NETWORK CONNECTION from sovereign service (container=%container.id src=%fd.sip:%fd.sport dst=%fd.dip:%fd.rport proc=%proc.name)
+  priority: WARNING
+  tags: [sovereign, network, egress]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: SENSITIVE FILE ACCESS
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Sensitive File Access
+  desc: Detect unauthorized access to sovereign configuration and secrets
+  condition: >
+    sovereign_services and
+    (evt.type in ("open", "openat", "openat2") and
+     (fd.name contains "/.env" or
+      fd.name contains "/secrets" or
+      fd.name contains "/keys" or
+      fd.name contains "/certs" or
+      fd.name contains "/jwt" or
+      fd.name contains "/.ssh" or
+      fd.name contains "/wallet" or
+      fd.name contains "/private" or
+      fd.name contains "governor.log" or
+      fd.name contains "mesh_state.json" or
+      fd.name contains "realm_state.json" or
+      fd.name contains "hyperrealm_state.json" or
+      fd.name contains "omnifabric_state.json" or
+      fd.name contains "continuum_state.json" or
+      fd.name contains "singularity_state.json" or
+      fd.name contains "nexus_state.json"))
+  output: >
+    SENSITIVE FILE ACCESS in sovereign container (container=%container.id file=%fd.name user=%user.name proc=%proc.cmdline)
+  priority: WARNING
+  tags: [sovereign, filesystem, secrets]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: UNAUTHORIZED PROCESS EXECUTION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Unauthorized Process Execution
+  desc: Detect execution of unauthorized binaries in sovereign containers
+  condition: >
+    sovereign_services and
+    evt.type = "execve" and
+    not sovereign_binaries and
+    not proc.name in ("sh", "bash", "ash", "dash", "zsh")
+  output: >
+    UNAUTHORIZED PROCESS EXECUTION in sovereign container (container=%container.id proc=%proc.name cmd=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [sovereign, execution, binary]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: SUSPICIOUS SHELL ACTIVITY
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Suspicious Shell Activity
+  desc: Detect interactive shell access to sovereign containers
+  condition: >
+    sovereign_services and
+    evt.type = "execve" and
+    proc.name in ("sh", "bash", "ash", "dash", "zsh") and
+    (proc.args contains "-i" or proc.args contains "-c" or proc.tty != 0)
+  output: >
+    INTERACTIVE SHELL in sovereign container (container=%container.id user=%user.name proc=%proc.cmdline tty=%proc.tty)
+  priority: WARNING
+  tags: [sovereign, shell, interactive]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: CRYPTO MINING DETECTION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Crypto Mining Detection
+  desc: Detect potential cryptocurrency mining in sovereign containers
+  condition: >
+    sovereign_services and
+    (proc.name contains "xmrig" or
+     proc.name contains "cpuminer" or
+     proc.name contains "cgminer" or
+     proc.name contains "bfgminer" or
+     proc.cmdline contains "stratum" or
+     proc.cmdline contains "mining" or
+     (proc.cpu > 80 and proc.name not in ("python3", "node", "java")))
+  output: >
+    CRYPTO MINING DETECTED in sovereign container (container=%container.id proc=%proc.name cpu=%proc.cpu cmd=%proc.cmdline)
+  priority: CRITICAL
+  tags: [sovereign, mining, abuse]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: GOVERNOR SERVICE ANOMALY
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Governor Anomaly
+  desc: Detect anomalies in Governor autonomous service
+  condition: >
+    container.image.repository contains "governor" and
+    (evt.type = "execve" and proc.name not in ("powershell.exe", "python3", "python", "git", "docker") or
+     proc.cmdline contains "rm -rf" or
+     proc.cmdline contains "format" or
+     proc.cmdline contains "mkfs" or
+     proc.cmdline contains "dd if=")
+  output: >
+    GOVERNOR ANOMALY detected (container=%container.id proc=%proc.name cmd=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [sovereign, governor, anomaly]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: HERETIC LLM INFERENCE ANOMALY
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Heretic LLM Anomaly
+  desc: Detect anomalies in Heretic LLM inference engine
+  condition: >
+    container.image.repository contains "heretic" and
+    (proc.cmdline contains "eval" or
+     proc.cmdline contains "exec" or
+     proc.cmdline contains "subprocess" or
+     proc.cmdline contains "os.system" or
+     proc.cmdline contains "__import__" or
+     proc.cmdline contains "getattr" or
+     proc.cmdline contains "setattr" or
+     proc.cmdline contains "delattr")
+  output: >
+    HERETIC LLM ANOMALY (container=%container.id proc=%proc.name cmd=%proc.cmdline)
+  priority: WARNING
+  tags: [sovereign, heretic, llm, injection]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: CYBERCORE BRIDGE ANOMALY
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign CyberCore Bridge Anomaly
+  desc: Detect anomalies in CyberCore telemetry bridge
+  condition: >
+    container.image.repository contains "cybercore" and
+    (proc.cmdline contains "curl" and fd.dip not in (127.0.0.1) or
+     proc.cmdline contains "wget" or
+     proc.cmdline contains "nc " or
+     proc.cmdline contains "netcat" or
+     proc.cmdline contains "socat" or
+     proc.cmdline contains "telnet")
+  output: >
+    CYBERCORE BRIDGE ANOMALY (container=%container.id proc=%proc.name cmd=%proc.cmdline dst=%fd.dip:%fd.rport)
+  priority: WARNING
+  tags: [sovereign, cybercore, bridge, egress]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: COMPLIANCE ENGINE TAMPERING
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Compliance Engine Tampering
+  desc: Detect tampering with Compliance Engine (The Gate)
+  condition: >
+    container.image.repository contains "compliance" and
+    (evt.type in ("open", "openat", "openat2") and fd.name contains "governor.log" and evt.arg.flags contains "O_TRUNC" or
+     evt.type in ("unlink", "unlinkat", "rename", "renameat") and fd.name contains "governor.log" or
+     proc.cmdline contains "sed" and proc.cmdline contains "governor.log" or
+     proc.cmdline contains "awk" and proc.cmdline contains "governor.log")
+  output: >
+    COMPLIANCE ENGINE TAMPERING (container=%container.id proc=%proc.name cmd=%proc.cmdline file=%fd.name)
+  priority: CRITICAL
+  tags: [sovereign, compliance, tampering, audit]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: STATE FILE CORRUPTION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign State File Corruption
+  desc: Detect unauthorized modification of sovereign state files
+  condition: >
+    sovereign_services and
+    (evt.type in ("write", "writev", "pwrite", "pwritev") and
+     (fd.name contains "mesh_state.json" or
+      fd.name contains "realm_state.json" or
+      fd.name contains "hyperrealm_state.json" or
+      fd.name contains "omnifabric_state.json" or
+      fd.name contains "continuum_state.json" or
+      fd.name contains "singularity_state.json" or
+      fd.name contains "nexus_state.json") and
+     proc.name not in ("python3", "python", "node"))
+  output: >
+    STATE FILE CORRUPTION (container=%container.id file=%fd.name proc=%proc.name user=%user.name)
+  priority: CRITICAL
+  tags: [sovereign, state, corruption, integrity]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: UNAUTHORIZED DOCKER SOCKET ACCESS
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Docker Socket Access
+  desc: Detect unauthorized access to Docker socket
+  condition: >
+    evt.type in ("open", "openat", "openat2") and
+    fd.name = "/var/run/docker.sock" and
+    proc.name not in ("docker", "dockerd", "containerd", "containerd-shim", "kubectl", "helm", "kubeadm")
+  output: >
+    UNAUTHORIZED DOCKER SOCKET ACCESS (proc=%proc.name user=%user.name container=%container.id cmd=%proc.cmdline)
+  priority: CRITICAL
+  tags: [sovereign, docker, socket, escalation]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: KUBERNETES API ABUSE
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Kubernetes API Abuse
+  desc: Detect abuse of Kubernetes API from sovereign containers
+  condition: >
+    sovereign_services and
+    (proc.cmdline contains "kubectl" and
+     (proc.cmdline contains "delete" or
+      proc.cmdline contains "patch" or
+      proc.cmdline contains "replace" or
+      proc.cmdline contains "create" and not proc.cmdline contains "apply") or
+     evt.type = "connect" and fd.dport = 6443 and fd.dip != "127.0.0.1")
+  output: >
+    KUBERNETES API ABUSE (container=%container.id proc=%proc.name cmd=%proc.cmdline dst=%fd.dip:%fd.rport)
+  priority: WARNING
+  tags: [sovereign, kubernetes, api, abuse]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: MEMORY/CPU EXHAUSTION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Resource Exhaustion
+  desc: Detect resource exhaustion attacks on sovereign services
+  condition: >
+    sovereign_services and
+    (container.memory.usage_pct > 95 or
+     container.cpu.usage_pct > 95 or
+     (proc.cpu > 90 and proc.name not in ("python3", "node", "java", "dotnet")))
+  output: >
+    RESOURCE EXHAUSTION in sovereign container (container=%container.id mem_pct=%container.memory.usage_pct cpu_pct=%container.cpu.usage_pct proc=%proc.name)
+  priority: WARNING
+  tags: [sovereign, resources, dos, exhaustion]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: TIME MANIPULATION
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Time Manipulation
+  desc: Detect time manipulation attempts (affects TOTP, JWT, certificates)
+  condition: >
+    sovereign_services and
+    (proc.cmdline contains "date -s" or
+     proc.cmdline contains "timedatectl" or
+     proc.cmdline contains "hwclock" or
+     proc.cmdline contains "ntpdate" or
+     proc.cmdline contains "chronyc" or
+     proc.cmdline contains "clock_settime")
+  output: >
+    TIME MANIPULATION ATTEMPT (container=%container.id proc=%proc.name cmd=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [sovereign, time, manipulation, crypto]
+
+# ─────────────────────────────────────────────────────────────────
+# RULE: SOVEREIGN PORT SCANNING
+# ─────────────────────────────────────────────────────────────────
+- rule: Sovereign Internal Port Scanning
+  desc: Detect internal port scanning from sovereign containers
+  condition: >
+    sovereign_services and
+    evt.type = "connect" and
+    fd.sip = fd.dip and
+    fd.rport > 1024 and
+    fd.rport not in (9003, 9004, 9006, 7777, 3000, 3001, 3002, 8080, 8081, 8082, 8083, 8084)
+  output: >
+    INTERNAL PORT SCANNING from sovereign container (container=%container.id src=%fd.sip:%fd.sport dst=%fd.dip:%fd.rport)
+  priority: WARNING
+  tags: [sovereign, network, scanning, internal]
+
+# ─────────────────────────────────────────────────────────────────
+# LISTS FOR REFERENCE
+# ─────────────────────────────────────────────────────────────────
+
+# Known sovereign container images
+# - aegentix/heretic
+# - aegentix/cybercore
+# - aegentix/compliance
+# - aegentix/governor
+# - aegentix/telemetry
+# - aegentix/webui
+# - aegentix/prometheus
+# - aegentix/grafana
+# - aegentix/alertmanager
+# - aegentix/loki
+# - aegentix/filebeat
+# - aegentix/aegentis-twin
+# - aegentix/skill-registry
+# - aegentix/operator-console
