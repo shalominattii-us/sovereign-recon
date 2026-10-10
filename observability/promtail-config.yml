@@ -1,0 +1,63 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: sovereign-kernel
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: sovereign-kernel
+          component: kernel
+          __path__: /sovereign/logs/kernel.log
+
+  - job_name: governor
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: governor
+          component: governor
+          __path__: /sovereign/logs/governor.log
+
+  - job_name: heretic
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: heretic
+          component: heretic
+          __path__: /var/log/heretic/*.log
+
+  - job_name: compliance
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: compliance
+          component: compliance
+          __path__: /var/log/compliance/*.log
+
+  - job_name: cybercore
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: cybercore
+          component: cybercore
+          __path__: /var/log/cybercore/*.log
+
+  - job_name: docker-containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+        __path__: /var/log/containers/*.log

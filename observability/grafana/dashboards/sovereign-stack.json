@@ -1,0 +1,249 @@
+{
+  "dashboard": {
+    "uid": "sovereign-stack",
+    "title": "Sovereign Stack Overview",
+    "tags": ["sovereign", "aegentix", "kernel", "observability"],
+    "timezone": "utc",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Sovereign Kernel Status",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"sovereign-kernel\"}",
+            "legendFormat": "AE-Hub v2 Kernel"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "options": {"0": "DOWN", "1": "UP"}}
+            ]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Heretic LLM (The Brain)",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"heretic-llm\"}",
+            "legendFormat": "Heretic LLM"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Compliance Engine (The Gate)",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"compliance-engine\"}",
+            "legendFormat": "Compliance Engine"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "CyberCore Bridge (Telemetry)",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"cybercore-bridge\"}",
+            "legendFormat": "CyberCore Bridge"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "AE-Hub v1 Kernel",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 4, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"aehub-v1-kernel\"}",
+            "legendFormat": "AE-Hub v1"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Infra Agent",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 4, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job=\"infra-agent\"}",
+            "legendFormat": "Infra Agent"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "OODA Loop Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(sovereign_ooda_loop_total[5m])",
+            "legendFormat": "OODA Loops/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Autonomous Alpha (USD/sec)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(sovereign_proactive_alpha_usd_total[5m])",
+            "legendFormat": "Alpha USD/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Compliance Gate: Approved vs Blocked",
+        "type": "piechart",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "increase(compliance_gate_approved_total[5m])",
+            "legendFormat": "Approved"
+          },
+          {
+            "expr": "increase(compliance_gate_blocked_total[5m])",
+            "legendFormat": "Blocked"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Governor Cycles",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(sovereign_governor_cycles_total[5m])",
+            "legendFormat": "Cycles/sec"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Sovereign Stage Health",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 24, "w": 24, "h": 12},
+        "targets": [
+          {
+            "expr": "sovereign_stage_health",
+            "format": "table",
+            "legendFormat": "{{stage}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "center",
+              "displayMode": "auto"
+            }
+          }
+        }
+      }
+    ],
+    "schemaVersion": 38,
+    "version": 1,
+    "links": []
+  },
+  "overwrite": true
+}
