@@ -1,0 +1,232 @@
+groups:
+  - name: sovereign-core-alerts
+    interval: 30s
+    rules:
+      # ─────────────────────────────────────────────────────────────────
+      # SOVEREIGN KERNEL ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: SovereignKernelDown
+        expr: up{job="sovereign-kernel"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: kernel
+        annotations:
+          summary: "Sovereign Kernel (AE-Hub v2) is down"
+          description: "AE-Hub v2 Kernel has been down for more than 1 minute"
+          runbook: "Check kernel logs at C:\\AE-Hub-v2\\logs\\kernel.log"
+
+      - alert: SovereignKernelHighErrorRate
+        expr: rate(sovereign_kernel_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: kernel
+        annotations:
+          summary: "Sovereign Kernel high error rate"
+          description: "Error rate exceeds 10% over 5 minutes"
+
+      # ─────────────────────────────────────────────────────────────────
+      # HERETIC LLM ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: HereticLLMDown
+        expr: up{job="heretic-llm"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: heretic
+        annotations:
+          summary: "Heretic LLM Inference Engine is down"
+          description: "The Brain (Heretic LLM on port 9003) is unreachable"
+
+      - alert: HereticLLMHighLatency
+        expr: histogram_quantile(0.95, rate(heretic_request_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          component: heretic
+        annotations:
+          summary: "Heretic LLM high latency"
+          description: "P95 latency exceeds 5 seconds"
+
+      # ─────────────────────────────────────────────────────────────────
+      # COMPLIANCE ENGINE ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: ComplianceEngineDown
+        expr: up{job="compliance-engine"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: compliance
+        annotations:
+          summary: "Compliance Engine (The Gate) is down"
+          description: "The Judge (Compliance Engine on port 9004) is unreachable"
+
+      - alert: ComplianceEngineGateRejectionRate
+        expr: rate(compliance_gate_rejections_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: compliance
+        annotations:
+          summary: "High gate rejection rate"
+          description: "More than 10 rejections per second"
+
+      # ─────────────────────────────────────────────────────────────────
+      # CYBERCORE BRIDGE ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: CyberCoreBridgeDown
+        expr: up{job="cybercore-bridge"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cybercore
+        annotations:
+          summary: "CyberCore Telemetry Bridge is down"
+          description: "Telemetry Bridge (port 9006) is unreachable"
+
+      - alert: CyberCoreBridgeBufferOverflow
+        expr: cybercore_buffered_events > 10000
+        for: 1m
+        labels:
+          severity: warning
+          component: cybercore
+        annotations:
+          summary: "CyberCore buffer overflow risk"
+          description: "Telemetry buffer exceeds 10k events"
+
+      # ─────────────────────────────────────────────────────────────────
+      # INFRA AGENT ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: InfraAgentDown
+        expr: up{job="infra-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infra
+        annotations:
+          summary: "Infra Agent is down"
+          description: "Infra Agent (port 9090) is unreachable"
+
+      - alert: InfraAgentHighCPU
+        expr: infra_cpu_usage_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: infra
+        annotations:
+          summary: "Infra Agent high CPU usage"
+          description: "CPU usage exceeds 90% for 5 minutes"
+
+      - alert: InfraAgentHighMemory
+        expr: infra_memory_usage_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: infra
+        annotations:
+          summary: "Infra Agent high memory usage"
+          description: "Memory usage exceeds 90% for 5 minutes"
+
+      # ─────────────────────────────────────────────────────────────────
+      # GENERAL INFRASTRUCTURE ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute"
+
+      - alert: HighCPUUsage
+        expr: (100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage exceeds 90% for 5 minutes"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage exceeds 90% for 5 minutes"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Less than 10% disk space remaining"
+
+      - alert: HighNetworkLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job!="prometheus"}[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network latency for {{ $labels.job }}"
+          description: "P95 latency exceeds 2 seconds"
+
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate for {{ $labels.job }}"
+          description: "Error rate exceeds 5% for {{ $labels.job }}"
+
+  - name: sovereign-business-alerts
+    interval: 60s
+    rules:
+      # ─────────────────────────────────────────────────────────────────
+      # BUSINESS LOGIC ALERTS
+      # ─────────────────────────────────────────────────────────────────
+      - alert: OODALoopStalled
+        expr: rate(sovereign_ooda_loop_total[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ooda
+        annotations:
+          summary: "OODA Loop stalled"
+          description: "No OODA loop iterations in 2 minutes"
+
+      - alert: AutonomousAlphaStalled
+        expr: rate(sovereign_proactive_alpha_usd_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: autonomous
+        annotations:
+          summary: "Autonomous alpha generation stalled"
+          description: "No proactive alpha generated in 5 minutes"
+
+      - alert: ComplianceGateBlocked
+        expr: increase(compliance_gate_blocked_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          component: compliance
+        annotations:
+          summary: "Multiple compliance gate blocks"
+          description: "More than 5 gate blocks in 5 minutes"
+
+      - alert: GovernorCycleFailure
+        expr: rate(sovereign_governor_errors_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+          component: governor
+        annotations:
+          summary: "Governor cycle failures"
+          description: "Governor autonomous loop errors exceed 1 per second"
