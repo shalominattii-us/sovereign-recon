@@ -85,10 +85,10 @@ func init() {
 func main() {
 	// Parse flags
 	configPath := flag.String("config", "/etc/infra-agent/config.yaml", "Path to config file")
-	healthCheck := flag.Bool("health", false, "Run health check and exit")
+	healthFlag := flag.Bool("health", false, "Run health check and exit")
 	flag.Parse()
 
-	if *healthCheck {
+	if *healthFlag {
 		if err := healthCheck(); err != nil {
 			fmt.Fprintf(os.Stderr, "Health check failed: %v\n", err)
 			os.Exit(1)
@@ -163,7 +163,7 @@ func loadConfig(path string) (*Config, error) {
 
 	// Try to load from file
 	if _, err := os.Stat(path); err == nil {
-		data, err := os.ReadFile(path)
+		_, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
@@ -279,7 +279,7 @@ func healthCheck() error {
 		"http://localhost:7777/s",       // Kernel
 	}
 
-	for _, ep := range endPoints {
+	for _, ep := range endpoints {
 		resp, err := client.Get(ep)
 		if err != nil {
 			return fmt.Errorf("endpoint %s unreachable: %v", ep, err)
